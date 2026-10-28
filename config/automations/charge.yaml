@@ -1,0 +1,48 @@
+alias: Charge the batter either from the grid or pv - 10m
+description: "Charge"
+triggers:
+  - trigger: time_pattern
+    minutes: "/10"
+  - trigger: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+  - trigger: state
+    entity_id: input_select.invertor_strategy
+
+condition:
+  - condition: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+    state: "on"
+  - condition: state
+    entity_id: input_select.invertor_strategy
+    state: "Charge"
+
+# Charge from the grid, by enabling the battery to only import, this means that all will go from the grid
+# not sure about some negative scenarios
+
+action:
+  - service: select.select_option
+    data:
+      option: Enabled Battery Control
+    target:
+      entity_id:
+        - select.solax_remotecontrol_power_control
+  - service: number.set_value
+    data:
+      value: "{{ (states('sensor.p_batt_forecast') | float / 100) | round(0) * 100 }}"
+    target:
+      entity_id: number.solax_remotecontrol_active_power
+  - service: number.set_value
+    data:
+      value: "606"
+    target:
+      entity_id: number.solax_remotecontrol_autorepeat_duration
+  - service: number.set_value
+    data:
+      value: 12000
+    target:
+      entity_id: number.solax_remotecontrol_import_limit
+  - service: button.press
+    data: {}
+    target:
+      entity_id: button.solax_remotecontrol_trigger
+mode: single

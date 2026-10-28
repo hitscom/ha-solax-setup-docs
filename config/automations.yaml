@@ -1,0 +1,3 @@
+automation: !include /config/automations/charge.yaml
+automation: !include /config/automations/discharge.yaml
+automation: !include /config/automations/sell_no_store.yaml

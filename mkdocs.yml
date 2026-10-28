@@ -129,7 +129,8 @@ markdown_extensions:
       user: 'sosiristseng'
       repo: 'template-mkdocs-material'
   # - pymdownx.smartsymbols
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -145,3 +146,4 @@ extra_css:
 
 watch:
   - includes
+  - config

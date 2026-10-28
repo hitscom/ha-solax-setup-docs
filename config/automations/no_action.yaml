@@ -1,0 +1,54 @@
+alias: No action - 10s
+description: ""
+triggers:
+  - trigger: time_pattern
+    minutes: "/10"
+  - trigger: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+  - trigger: state
+    entity_id: input_select.invertor_strategy
+
+condition:
+  - condition: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+    state: "on"
+  - condition: state
+    entity_id: input_select.invertor_strategy
+    state: "No action"
+#
+# this is the only way to force the safe selling, this forces the battery to not charge.
+# but you can still push energy in and out (in case of some fuckup).
+# low load cases
+#
+# with E_BATTERY_CONTROL
+# positive -> charge
+# negative -> discharge
+# 0 no battery
+#
+action:
+  - service: select.select_option
+    data:
+      option: Enabled Battery Control
+    target:
+      entity_id:
+        - select.solax_remotecontrol_power_control
+  - service: number.set_value
+    data:
+      value: "0"
+    target:
+      entity_id: number.solax_remotecontrol_active_power
+  - service: number.set_value
+    data:
+      value: "10"
+    target:
+      entity_id: number.solax_remotecontrol_autorepeat_duration
+  - service: number.set_value
+    data:
+      value: 12000
+    target:
+      entity_id: number.solax_remotecontrol_import_limit
+  - service: button.press
+    data: {}
+    target:
+      entity_id: button.solax_remotecontrol_trigger
+mode: single

@@ -1,0 +1,37 @@
+alias: No action - 10s
+description: ""
+triggers:
+  - trigger: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+condition:
+  - condition: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+    state: "off"
+
+action:
+  - service: select.select_option
+    data:
+      option: Enabled Battery Control
+    target:
+      entity_id:
+        - select.solax_remotecontrol_power_control
+  - service: number.set_value
+    data:
+      value: "0"
+    target:
+      entity_id: number.solax_remotecontrol_active_power
+  - service: number.set_value
+    data:
+      value: "10"
+    target:
+      entity_id: number.solax_remotecontrol_autorepeat_duration
+  - service: number.set_value
+    data:
+      value: 12000
+    target:
+      entity_id: number.solax_remotecontrol_import_limit
+  - service: button.press
+    data: {}
+    target:
+      entity_id: button.solax_remotecontrol_trigger
+mode: single

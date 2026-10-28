@@ -1,0 +1,46 @@
+alias: Discharge the battery to the grid or to the house load 
+description: ""
+triggers:
+  - trigger: time_pattern
+    minutes: "/10"
+  - trigger: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+  - trigger: state
+    entity_id: input_select.invertor_strategy
+condition:
+  - condition: state
+    entity_id: input_boolean.automatic_invertor_control_enabled
+    state: "on"
+  - condition: state
+    entity_id: input_select.invertor_strategy
+    state: "Discharge"
+
+# Discharge the battery, this is reasonably 
+
+action:
+  - service: select.select_option
+    data:
+      option: Enabled Battery Control
+    target:
+      entity_id:
+        - select.solax_remotecontrol_power_control
+  - service: number.set_value
+    data:
+      value: "{{ - ((states('sensor.p_batt_forecast') | float / 100) | int) * 100 }}"
+    target:
+      entity_id: number.solax_remotecontrol_active_power
+  - service: number.set_value
+    data:
+      value: "606"
+    target:
+      entity_id: number.solax_remotecontrol_autorepeat_duration
+  - service: number.set_value
+    data:
+      value: 12000
+    target:
+      entity_id: number.solax_remotecontrol_import_limit
+  - service: button.press
+    data: {}
+    target:
+      entity_id: button.solax_remotecontrol_trigger
+mode: single
