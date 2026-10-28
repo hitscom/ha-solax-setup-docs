@@ -60,14 +60,10 @@ Create a folder with the automations is /config/automations
     --8<-- "config/automations/disable.yaml"
     ```
 
-=== "`publish.yaml`"
-    ```yaml
-    --8<-- "config/automations/publish.yaml"
-    ```
-
 Please setup these automations and you are quite good to go!!!
 
-The `publish.yaml` automation and the `publish_data` shell command are not needed anymore,
-`em.py` publishes the EMHASS data every 5 minutes and watches that it works, see the [Pyscripts](./5_pyscript.md) page.
+If you set up the `publish.yaml` automation and the `publish_data` shell command from an earlier version of this guide,
+delete both. `em.py` publishes the EMHASS data every 5 minutes and watches that it works, see the [Pyscripts](./5_pyscript.md) page.
+With both in place EMHASS gets two publishes at the same moment.
 
 

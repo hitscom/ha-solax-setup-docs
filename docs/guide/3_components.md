@@ -119,11 +119,9 @@ pyscript:
 logger:
   default: info
   logs:
-    custom_components.pyscript: debug
-
-# We will use this later in the automations.
-shell_command:
-  publish_data: "curl -i -H \"Content-Type:application/json\" -X POST -d '{}' http://localhost:5000/action/publish-data"
-
+    # debug logs every call pyscript makes with all its values, turn it on only to chase an issue
+    custom_components.pyscript: info
+    # the log of em.py, debug adds every publish and every export limit check
+    spot_eval: info
 ```
 

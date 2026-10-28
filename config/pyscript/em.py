@@ -10,27 +10,30 @@ import logging
 
 logger = logging.getLogger("spot_eval.pyscript")
 
-EMHASS_URL = "http://localhost:5000"
+# Not localhost: it resolves to IPv6 ::1 first, where port 5000 accepts and resets the connection
+EMHASS_URL = "http://127.0.0.1:5000"
 
 
 async def call_emhass(action, json):
   """Post to emhass endpoint with json."""
 
   async with aiohttp.ClientSession() as session:
-    async with session.post(
+    # Not async with: pyscript calls __aexit__ also when the post itself fails, aiohttp then
+    # raises an AttributeError ('_resp') hiding the real error. Closing the session releases it.
+    response = await session.post(
       f"{EMHASS_URL}/action/{action}",
       json=json, headers={"Content-Type": "application/json"}
-    ) as response:
-      # EMHASS answers with plain text, not json
-      text = await response.text()
-      if response.status >= 400:
-        raise aiohttp.ClientResponseError(
-          request_info=response.request_info,
-          history=response.history,
-          status=response.status,
-          message=text
-        )
-      return text
+    )
+    # EMHASS answers with plain text, not json
+    text = await response.text()
+    if response.status >= 400:
+      raise aiohttp.ClientResponseError(
+        request_info=response.request_info,
+        history=response.history,
+        status=response.status,
+        message=text
+      )
+    return text
 
 
 async def publish():
@@ -71,6 +74,8 @@ async def run_optimization(optimization):
   logger.info(f"Finished the {optimization.action}")
 
 
+# Also a service, pyscript.dayahead, to run it during the day for testing
+@service
 @time_trigger("cron(00 23 * * *)")
 async def dayahead():
   """Perform Dayahead optimization."""

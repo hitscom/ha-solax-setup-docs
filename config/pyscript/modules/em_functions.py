@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger("spot_eval.pyscript")
 
-# EMHASS actions, the endpoint of http://localhost:5000/action/<action>
+# EMHASS actions, the endpoint of http://127.0.0.1:5000/action/<action>
 MPC = "naive-mpc-optim"
 DAYAHEAD = "dayahead-optim"
 PUBLISH = "publish-data"
@@ -50,15 +50,32 @@ SOC_FINAL_LOW_PRODUCTION = 0.7
 SOC_FINAL_NORMAL_PRODUCTION = 0.5
 
 
+def spot_forecast(attributes):
+  """(time, price) of the spot price sensor attributes named by an ISO time.
+
+  The other attributes are skipped: unit_of_measurement, icon, friendly_name and
+  whatever else the sensor has, e.g. state_class or device_class.
+  """
+  forecast = []
+  for k, v in attributes.items():
+    try:
+      date = datetime.fromisoformat(k)
+    except ValueError:
+      continue
+    forecast += [(date, v)]
+
+  # Otherwise a sensor with differently named attributes just gives no prices
+  if not forecast:
+    logger.warning(f"No spot prices in the attributes {list(attributes)}")
+  return forecast
+
+
 def get_spot_prices_day_ahead(now, attributes, price_adjustment):
   """Get the prices from the forecast."""
   prices = []
-  forecast = [(k, v) for k, v in attributes.items() if
-              k != "unit_of_measurement" and k != "icon" and k != "friendly_name"]
 
-  for k, v in forecast:
+  for date, v in spot_forecast(attributes):
     v_a = v
-    date = datetime.fromisoformat(k)
 
     if date < now:
       continue
@@ -74,13 +91,9 @@ def get_spot_prices_day_ahead(now, attributes, price_adjustment):
 def get_spot_prices_mpc(attributes, lines_limit, start, tomorrow, price_adjustment):
   """Get the spot prices for the mpc."""
   prices = []
-  forecast = [(k, v) for k, v in attributes.items() if
-              k != "unit_of_measurement" and k != "icon" and k != "friendly_name"]
 
-  for k, v in forecast:
+  for date, v in spot_forecast(attributes):
     v_a = v
-
-    date = datetime.fromisoformat(k)
 
     if start <= date < tomorrow:
       prices += [v_a + price_adjustment ]
@@ -157,21 +170,34 @@ def mpc_lines_limit(start, end):
 
 
 def dayahead_optimization(now, buy_attributes, sell_attributes, pv_watts, soc_init, tomorrow_production):
-  """Build the dayahead optimization.
+  """Build the dayahead optimization, skipped when the prices don't cover the whole day.
 
   buy_attributes, sell_attributes: {iso time: price} attributes of the spot price sensors
   pv_watts: function returning the {iso time: watts} forecast of today and tomorrow,
             only called when the optimization runs
   soc_init: battery level in percent
   tomorrow_production: forecasted production tomorrow in kWh
+
+  EMHASS plans the dayahead always for the next LINES_LIMIT steps, it ignores
+  prediction_horizon and rejects a shorter forecast. Run during the day, e.g. for
+  testing, it works only after the prices of tomorrow are published in the afternoon.
+  The pv forecast is read after the skip decision, like in mpc_optimization.
   """
   # Same first slot as the pv forecast
   start = to_quarter_hour(now)
 
+  load_cost_forecast = get_spot_prices_day_ahead(start, buy_attributes, BUY_PRICE_ADJUSTMENT)
+  prod_price_forecast = get_spot_prices_day_ahead(start, sell_attributes, SELL_PRICE_ADJUSTMENT)
+
+  lines = min(len(load_cost_forecast), len(prod_price_forecast))
+  if lines < LINES_LIMIT:
+    return Optimization(DAYAHEAD, None, f"only {lines} lines of prices from {start.isoformat()}, "
+                        f"the dayahead needs {LINES_LIMIT}, the prices of tomorrow are published in the afternoon")
+
   return Optimization(DAYAHEAD, {
     "pv_power_forecast" : to_nice_minutes(pv_watts(), now),
-    "load_cost_forecast" : get_spot_prices_day_ahead(start, buy_attributes, BUY_PRICE_ADJUSTMENT),
-    "prod_price_forecast" : get_spot_prices_day_ahead(start, sell_attributes, SELL_PRICE_ADJUSTMENT),
+    "load_cost_forecast" : load_cost_forecast,
+    "prod_price_forecast" : prod_price_forecast,
     "soc_init": float(soc_init) / 100,
     "soc_final": soc_final(tomorrow_production),
   })

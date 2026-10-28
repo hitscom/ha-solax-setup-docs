@@ -4,9 +4,6 @@
 ####################
 #  SOLAX INVERTOR HELPERS
 ####################
-shell_command:
-  publish_data: "curl -v -i -H \"Content-Type:application/json\" -X POST -d '{}' http://localhost:5000/action/publish-data"
-
 # our entities for invertor overview
 input_select:
   # managed by the python script, will get overriden if the input_boolean.automatic_invertor_control_enabled is true

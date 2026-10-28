@@ -30,13 +30,10 @@ def load_module(path):
   spec.loader.exec_module(module)
   return module
 
-
 em = load_module(EM_FUNCTIONS_PY)
-
 
 def _timeout(signum, frame):
   raise TimeoutError(f"to_nice_minutes did not return within {TIMEOUT_SECONDS}s (endless loop?)")
-
 
 def run(values, now):
   """Single place that knows the call signature of to_nice_minutes."""
@@ -163,6 +160,15 @@ class SpotPricesTest(unittest.TestCase):
 
     self.assertEqual(em.get_spot_prices_mpc(attributes, 4, start, end, 0), [8, 9, 10, 11])
 
+  def test_attributes_that_are_not_a_time_are_skipped(self):
+    extra = {"state_class": "measurement", "device_class": "monetary", "attribution": "OTE"}
+    attributes = extra | spot_attributes(datetime(2026, 10, 22, 6, 0, tzinfo=UTC), 200)
+    start = datetime(2026, 10, 22, 8, 0, tzinfo=UTC)
+    end = datetime(2026, 10, 22, 10, 0, tzinfo=UTC)
+
+    self.assertEqual(em.get_spot_prices_mpc(attributes, 96, start, end, 0), list(range(8, 16)))
+    self.assertEqual(em.get_spot_prices_day_ahead(start, attributes, 0), list(range(8, 8 + 96)))
+
 
 class SocFinalTest(unittest.TestCase):
 
@@ -221,6 +227,29 @@ class PayloadTest(unittest.TestCase):
       "soc_init": 0.55,
       "soc_final": 0.7,
     })
+
+  def test_dayahead_is_skipped_before_the_prices_of_tomorrow_are_published(self):
+    """EMHASS ignores prediction_horizon in the dayahead, a shorter forecast fails there."""
+    def unavailable():
+      raise KeyError("watts")
+    # The prices end at 22:00Z (midnight in Prague), 08:00Z .. 22:00Z is 56 lines
+    buy = spot_attributes(datetime(2026, 10, 22, 6, 0, tzinfo=UTC), 64)
+
+    optimization = em.dayahead_optimization(self.now, buy, self.sell, unavailable, "55", "25")
+
+    self.assertEqual(optimization.action, em.DAYAHEAD)
+    self.assertIsNone(optimization.payload)
+    self.assertIn("only 56 lines", optimization.skipped)
+
+  def test_dayahead_is_skipped_when_the_prices_are_missing(self):
+    def unavailable():
+      raise KeyError("watts")
+
+    optimization = em.dayahead_optimization(self.now, spot_attributes(self.now, 0), self.sell, unavailable, "55", "25")
+
+    self.assertEqual(optimization.action, em.DAYAHEAD)
+    self.assertIsNone(optimization.payload)
+    self.assertIn("only 0 lines", optimization.skipped)
 
   def test_mpc_optimization_cuts_every_forecast_to_the_horizon(self):
     # 08:00Z .. 21:00Z (23:00 Prague) is 52 lines
