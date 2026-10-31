@@ -5,7 +5,9 @@ EMHASS, so this file can be imported and unit tested outside of Home Assistant.
 The optimizations are returned as an Optimization result, em.py posts it to EMHASS.
 The Home Assistant reads and writes live in em_inputs.py, the triggers in em.py.
 """
+import json
 import logging
+import re
 
 from collections import namedtuple
 from zoneinfo import ZoneInfo
@@ -246,6 +248,31 @@ def export_limit(spot_price, sell_threshold, restore_limit):
     return float(restore_limit), True
   return 0, False
 # --8<-- [end:export]
+
+
+# Longest non-json EMHASS answer kept in an error, an internal server error is a whole html page
+MAX_ERROR_LENGTH = 300
+
+
+def emhass_errors(text):
+  """The ERROR and WARNING lines of a failed EMHASS answer, joined with " | ".
+
+  EMHASS answers a failed action with its log lines as a json list. Without an ERROR or
+  WARNING line the last line is returned. Any other answer, e.g. the html page of an
+  internal server error, is returned without the html tags, cut to MAX_ERROR_LENGTH.
+  """
+  try:
+    lines = json.loads(text)
+  except ValueError:
+    lines = None
+
+  if not isinstance(lines, list) or not lines:
+    return " ".join(re.sub("<[^>]+>", " ", text).split())[:MAX_ERROR_LENGTH]
+
+  errors = [str(line) for line in lines if str(line).startswith(("ERROR", "WARNING"))]
+  if not errors:
+    errors = [str(lines[-1])]
+  return " | ".join(errors)
 
 
 # An ok publish older than this means EMHASS stopped publishing, em.py publishes every 5 minutes

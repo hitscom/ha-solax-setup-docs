@@ -27,12 +27,8 @@ async def call_emhass(action, json):
     # EMHASS answers with plain text, not json
     text = await response.text()
     if response.status >= 400:
-      raise aiohttp.ClientResponseError(
-        request_info=response.request_info,
-        history=response.history,
-        status=response.status,
-        message=text
-      )
+      # Not a ClientResponseError, its repr holds the whole request and the whole EMHASS log
+      raise RuntimeError(f"EMHASS answered {response.status}: {em_functions.emhass_errors(text)}")
     return text
 
 
@@ -49,15 +45,12 @@ async def publish():
     return
 
   # debug, this runs every 5 minutes
-  logger.debug(f"{em_functions.PUBLISH} result {repr(result)}")
+  # logger.debug(f"{em_functions.PUBLISH} result {repr(result)}")
   em_inputs.set_last_publish(em_inputs.now())
 
 
 async def run_optimization(optimization):
-  """Post the optimization to EMHASS and publish the result.
-
-  The EMHASS answer is written to the log as a repr.
-  """
+  """Post the optimization to EMHASS and publish the result."""
   if optimization.skipped:
     logger.info(f"Skipping {optimization.action}: {optimization.skipped}")
     return
@@ -68,7 +61,7 @@ async def run_optimization(optimization):
     logger.error(f"{optimization.action} failed {repr(e)}")
     return
 
-  logger.info(f"{optimization.action} result {repr(result)}")
+  # logger.info(f"{optimization.action} result {repr(result)}")
   await publish()
 
   logger.info(f"Finished the {optimization.action}")
@@ -88,7 +81,7 @@ async def dayahead():
     em_inputs.tomorrow_production(),
   )
   # The result of the function code, to find issues with it later
-  logger.info(f"Optimization {repr(optimization)}")
+  # logger.info(f"Optimization {repr(optimization)}")
   await run_optimization(optimization)
 
 
@@ -104,7 +97,7 @@ async def mpc():
     em_inputs.tomorrow_production(),
   )
   # The result of the function code, to find issues with it later
-  logger.info(f"Optimization {repr(optimization)}")
+  # logger.info(f"Optimization {repr(optimization)}")
   await run_optimization(optimization)
 
 

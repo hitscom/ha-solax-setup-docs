@@ -33,8 +33,8 @@ However, these are ready at the top of `em_inputs.py`, so it should be relativel
 
 The triggers. Each one reads the values with `em_inputs`, builds an `Optimization` result with `em_functions`
 (the EMHASS action, the payload and the reason when it is skipped) and posts it to EMHASS.
-The `Optimization` is written to the log as a `repr` before it is posted, so issues with the function code can be found later.
-The EMHASS answer is logged the same way.
+The logging of the `Optimization` and of the EMHASS answer is commented out, uncomment it in `em.py` to find issues with the function code.
+A failed call logs the ERROR and WARNING lines of the EMHASS answer.
 
 The day-ahead runs at 23:00, to test it during the day call the `pyscript.dayahead` action in
 Developer Tools -> Actions. EMHASS plans the day-ahead always for the next 24 hours and ignores `prediction_horizon`,

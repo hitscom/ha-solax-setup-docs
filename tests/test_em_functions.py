@@ -3,6 +3,7 @@
 Run with: python3 -m unittest discover -s tests
 """
 import importlib.util
+import json
 import signal
 import unittest
 
@@ -319,6 +320,36 @@ class ExportLimitTest(unittest.TestCase):
     self.assertEqual(em.export_limit("2.0", "2.0", "6000.0"), (0, False))
     self.assertEqual(em.export_limit("-1", "2.0", "6000.0"), (0, False))
 
+
+
+class EmhassErrorsTest(unittest.TestCase):
+
+  def test_keeps_only_the_error_and_warning_lines_of_the_log(self):
+    text = json.dumps([
+      "INFO - emhass.web_server - >> Performing naive-mpc-optim...",
+      "WARNING - emhass.web_server - Optimization failed with status: 'infeasible'.",
+      "DEBUG - emhass.web_server - Stage [optim_solve] completed in 0.205s",
+      "ERROR - emhass.web_server - Relaxed optimization also failed with status: infeasible",
+    ])
+
+    self.assertEqual(em.emhass_errors(text),
+                     "WARNING - emhass.web_server - Optimization failed with status: 'infeasible'. | "
+                     "ERROR - emhass.web_server - Relaxed optimization also failed with status: infeasible")
+
+  def test_without_an_error_line_the_last_line_is_kept(self):
+    text = json.dumps(["INFO - emhass.web_server - >> Publishing data...", "INFO - emhass.web_server - done"])
+
+    self.assertEqual(em.emhass_errors(text), "INFO - emhass.web_server - done")
+
+  def test_html_answer_is_returned_as_short_text(self):
+    text = ("<!doctype html>\n<html lang=en>\n<title>500 Internal Server Error</title>\n"
+            "<h1>Internal Server Error</h1>\n<p>The server encountered an internal error.</p>\n")
+
+    self.assertEqual(em.emhass_errors(text),
+                     "500 Internal Server Error Internal Server Error The server encountered an internal error.")
+
+  def test_long_answer_is_cut(self):
+    self.assertEqual(len(em.emhass_errors("x" * 1000)), em.MAX_ERROR_LENGTH)
 
 
 class PublishStatusTest(unittest.TestCase):
