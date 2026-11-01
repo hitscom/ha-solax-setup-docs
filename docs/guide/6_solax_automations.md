@@ -10,7 +10,7 @@ tags:
 We have a strategy selector updating our helper entity. These automations are realizing the strategy towards the
 solax. Remember the Self Use Mode that we are using as setup in the components? That will be our No action strategy.
 There are however few cases there we want to hande the invertor with remote control.
-If you want to truly understand, please read [docs](https://homeassistant-solax-modbus.readthedocs.io/en/latest/modbus-power-control/).
+If you want to truly understand, please read [docs](https://homeassistant-solax-modbus.readthedocs.io/en/latest/solax-mode1-modbus-power-control/).
 
 Handled situations:
 

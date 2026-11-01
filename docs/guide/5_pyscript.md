@@ -24,7 +24,7 @@ There is a todo -> expose the adjustment of the spot_prices to the user by a ent
 #### EMHASS calls
 
 There is not much here also. Just calls to the EMHASS day-ahead optimization and the EMHASS MPC.
-Please take a look at https://emhass.readthedocs.io/en/latest/lpems.html#the-emhass-optimizations nice grap.
+Please take a look at https://emhass.readthedocs.io/en/latest/advanced_math_model.html#the-emhass-optimizations nice grap.
 
 Goal of these is to provide a plan that updates as the time goes by. You will need to probably adapt the names of the used entities to match your entities.
 However, these are ready at the top of `em_inputs.py`, so it should be relatively straightforward.
@@ -91,7 +91,7 @@ The trigger writing it to solax:
 Honestly this script could be improved quite a bit, but it works for me. I will probably do once I have some energy.
 
 Before trying to understand this, please take a look at the outputs from EMHASS.
-Here we are taking a look at the variables the EMHASS give us: https://emhass.readthedocs.io/en/latest/lpems.html#the-emhass-optimizations
+Here we are taking a look at the variables the EMHASS give us: https://emhass.readthedocs.io/en/latest/advanced_math_model.html#the-emhass-optimizations
 This script updates the strategy entity.
 
 
