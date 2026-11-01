@@ -1,6 +1,6 @@
 # Repo for the Solax + Home assinstant example integration
 
-[Live website](ha-docs.sohai.app)
+[Live website](https://ha-docs.sohai.app/)
 
 ### Core components
 
