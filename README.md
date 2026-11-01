@@ -1,5 +1,7 @@
 # Repo for the Solax + Home assinstant example integration
 
+[Live website](ha-docs.sohai.app)
+
 ### Core components
 
 - Home assistant
