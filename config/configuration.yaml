@@ -45,6 +45,16 @@ input_number:
     max: 10
     mode: box
 
+template:
+  - binary_sensor:
+      - name: EMHASS publish
+        unique_id: emhass_publish_p_batt_stale
+        device_class: problem
+        # on (Problem) when sensor.p_batt_forecast is missing or hasn't been written for 15 minutes
+        state: >
+          {% set s = states.sensor.p_batt_forecast %}
+          {{ s is none or now() - s.last_reported > timedelta(minutes=15) }}
+
 
 
 

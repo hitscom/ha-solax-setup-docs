@@ -20,6 +20,12 @@ Handled situations:
 - No action
 - Automatic control disabled
 
+The charge, discharge, sell to grid and no action automations act only while `binary_sensor.emhass_publish_stale` is `off`,
+which means the EMHASS data is current, see the publish watchdog on the [Pyscripts](./5_pyscript.md#publish-watchdog) page.
+With stale data, or after a restart before the first ok publish, they send nothing even with the control enabled.
+The inverter keeps the last command until its autorepeat duration ends, then returns to its normal mode, the Self Use Mode.
+When the publish is ok again they run right away. Turning the control off still works at any time.
+
 #### Configuration.yaml
 
 Uncomment this section.

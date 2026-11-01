@@ -108,7 +108,9 @@ async def publish_every_5_minutes():
 
 
 # --8<-- [start:watchdog]
-# 2 minutes after the publish, so the check sees the publish of the same 5 minutes
+# 2 minutes after the publish, so the check sees the publish of the same 5 minutes.
+# Not at startup: until the first check after a restart the binary sensor doesn't exist and
+# the Solax automations wait, by then the startup publish is done.
 @time_trigger("cron(2-59/5 * * * *)")
 async def publish_watchdog():
   """Check that the last ok publish is less than 15 minutes old."""

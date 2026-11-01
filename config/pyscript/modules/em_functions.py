@@ -277,6 +277,7 @@ def emhass_errors(text):
 
 # An ok publish older than this means EMHASS stopped publishing, em.py publishes every 5 minutes
 MAX_PUBLISH_AGE = timedelta(minutes = 15)
+
 PUBLISH_OK = "ok"
 PUBLISH_STALE = "stale"
 

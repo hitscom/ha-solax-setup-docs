@@ -59,10 +59,15 @@ The logic. Plain Python, it is covered by the unit tests in the `tests` folder o
 
 `em.py` publishes the EMHASS results to Home Assistant every 5 minutes and right after each optimization.
 Every publish EMHASS answers without an error stores its time in `pyscript.emhass_last_publish`.
-2 minutes after each publish a check compares that time to now. Less than 15 minutes old is `ok`, otherwise `stale`.
-The result is in `pyscript.emhass_publish_watchdog`, with the age in minutes as the `age_minutes` attribute,
-so you can use it in an automation or on a dashboard. Both entities are kept across restarts.
-The log gets a warning when it turns `stale` and an info when it is `ok` again.
+2 minutes after each publish a check compares that time to now. Less than 15 minutes old is ok, otherwise stale.
+The result is the `binary_sensor.emhass_publish_stale` problem sensor: `off` (shown as OK) when ok, `on` (shown as Problem) when stale,
+with the age in minutes as the `age_minutes` attribute. The [Solax automations](./6_solax_automations.md) act only while it is `off`.
+It is created by pyscript without a unique ID, so you can't rename it or assign it an area in the UI.
+The log gets a warning when it turns stale and an info when it is ok again.
+
+Neither entity is kept across a Home Assistant restart, on purpose. The EMHASS sensors are gone after a restart
+until the first publish, so a publish from before the restart must not count. Until the first check after the restart
+the binary sensor doesn't exist and the automations wait.
 
 EMHASS answers ok even when it could not write the sensors to Home Assistant, check its log in that case.
 

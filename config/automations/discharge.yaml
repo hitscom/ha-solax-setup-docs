@@ -7,6 +7,10 @@ triggers:
     entity_id: input_boolean.automatic_invertor_control_enabled
   - trigger: state
     entity_id: input_select.invertor_strategy
+  # Run right away when the EMHASS publish is ok again
+  - trigger: state
+    entity_id: binary_sensor.emhass_publish_stale
+    to: "off"
 condition:
   - condition: state
     entity_id: input_boolean.automatic_invertor_control_enabled
@@ -14,6 +18,12 @@ condition:
   - condition: state
     entity_id: input_select.invertor_strategy
     state: "Discharge"
+  # Only with current EMHASS data: off = publish ok, on = stale, missing after a restart
+  # until the first check. Without a command the inverter returns to Self Use
+  # when the autorepeat duration of the last command ends.
+  - condition: state
+    entity_id: binary_sensor.emhass_publish_stale
+    state: "off"
 
 # Discharge the battery, this is reasonably 
 

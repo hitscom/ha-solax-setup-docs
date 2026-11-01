@@ -9,7 +9,7 @@ Adapt the entity names below to match your entities.
 """
 from datetime import datetime
 
-from em_functions import TIMEZONE
+from em_functions import PUBLISH_OK, PUBLISH_STALE, TIMEZONE
 
 # This is the OTE integation sensor, if you use something else, please adapt the spot price functions
 SENSOR_TODAY_SPOT = "sensor.current_spot_electricity_price_15min"
@@ -39,15 +39,14 @@ INPUT_SENSOR_SELL_THRESHOLD = "input_number.export_price_threshold"
 # Input sensor that defines the maximum limit restoration
 INPUT_SENSOR_RESTORE_EXPORT_ALLOWED = "input_number.maximum_export_allowed"
 
-# Pyscript entities written by em.py, kept across Home Assistant restarts.
+# Entities written by em.py. Neither is kept across Home Assistant restarts, on purpose:
+# the EMHASS sensors are gone after a restart until the first ok publish, so a publish
+# from before the restart must not count.
 # Time of the last ok publish to EMHASS, as an ISO timestamp
 PYSCRIPT_LAST_PUBLISH = "pyscript.emhass_last_publish"
-# Result of the publish watchdog: ok or stale, with the age as an attribute
-PYSCRIPT_PUBLISH_WATCHDOG = "pyscript.emhass_publish_watchdog"
-
-# Runs on every load of this module, as pyscript requires for persisted entities
-state.persist(PYSCRIPT_LAST_PUBLISH, default_value="unknown")
-state.persist(PYSCRIPT_PUBLISH_WATCHDOG, default_value="unknown")
+# Result of the publish watchdog as a problem binary sensor: on when the publish is stale,
+# off when it is ok, with the age as an attribute. The Solax automations act only when off.
+BINARY_SENSOR_PUBLISH_STALE = "binary_sensor.emhass_publish_stale"
 
 
 def now():
@@ -117,6 +116,9 @@ def set_export_limit(value):
 
 def last_publish():
   """Time of the last ok publish, as the raw state (an ISO timestamp or unknown)."""
+  # Doesn't exist until the first ok publish after a restart
+  if not state.exist(PYSCRIPT_LAST_PUBLISH):
+    return "unknown"
   return state.get(PYSCRIPT_LAST_PUBLISH)
 
 
@@ -126,10 +128,28 @@ def set_last_publish(time):
 
 
 def publish_watchdog_status():
-  """Last result of the publish watchdog: ok, stale or unknown."""
-  return state.get(PYSCRIPT_PUBLISH_WATCHDOG)
+  """Last result of the publish watchdog: PUBLISH_OK, PUBLISH_STALE, or None before its first run."""
+  # Doesn't exist until the first run after a restart
+  if not state.exist(BINARY_SENSOR_PUBLISH_STALE):
+    return None
+  value = state.get(BINARY_SENSOR_PUBLISH_STALE)
+  if value == "on":
+    return PUBLISH_STALE
+  if value == "off":
+    return PUBLISH_OK
+  return None
 
 
 def set_publish_watchdog(status, age_minutes, last_publish):
-  """Store the result of the publish watchdog, usable in automations and dashboards."""
-  state.set(PYSCRIPT_PUBLISH_WATCHDOG, status, age_minutes=age_minutes, last_publish=str(last_publish))
+  """Store the result of the publish watchdog, usable in automations and dashboards.
+
+  device_class problem makes Home Assistant show on as Problem and off as OK.
+  """
+  state.set(
+    BINARY_SENSOR_PUBLISH_STALE,
+    "on" if status == PUBLISH_STALE else "off",
+    device_class="problem",
+    friendly_name="EMHASS publish",
+    age_minutes=age_minutes,
+    last_publish=str(last_publish),
+  )
