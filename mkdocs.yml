@@ -1,5 +1,5 @@
 site_name: Solax setup with Home Assistant
-site_url: !ENV [SITE_URL, 'https://ha-docs.sohai.app']
+site_url: !ENV [SITE_URL, 'https://ha-docs.sohai.app', 'https://ha-wiki.ogar.dev']
 site_author: sithcom
 
 # Repository
